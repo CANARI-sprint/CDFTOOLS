@@ -88,6 +88,7 @@ PROGRAM cdfmocsig
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: depi                 ! Zonal mean of depths of isopycnal
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: wdep                 ! count array
 
+  CHARACTER(LEN=256)                              :: cf_e3v               ! e3v file
   CHARACTER(LEN=256)                              :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                              :: cf_tfil              ! temperature/salinity file
   CHARACTER(LEN=256)                              :: cf_sfil              ! salinity file (option)
@@ -113,7 +114,8 @@ PROGRAM cdfmocsig
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmocsig  -v V-file -t T-file -r REF-depth | -ntr [-eiv] [-full] ...'
      PRINT *,'        ... [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] ...'
-     PRINT *,'        ... [-s S-file ] [-o OUT-file] [-vvl] [-verbose] [-teos10]'
+     PRINT *,'        ... [-s S-file ] [-o OUT-file] [-vvl] [-verbose] [-teos10] ...'
+     PRINT *,'        ... [-e e3v-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE : '
      PRINT *,'       Compute the MOC in density-latitude coordinates. The global value is '
@@ -192,6 +194,7 @@ PROGRAM cdfmocsig
      CASE ( '-r'     ) ;  CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; ii=ii+1 ; READ(cldum,*) pref
      CASE ( '-ntr'   ) ;  lntr = .TRUE. ; ii=ii+1
         ! options
+     CASE ( '-e'     ) ;  CALL getarg (ijarg, cf_e3v) ; ijarg=ijarg+1 
      CASE ( '-s'     ) ;  CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1 
      CASE ('-full'   ) ; lfull   = .TRUE. ; cglobal = 'Full step computation'
      CASE ('-eiv'    ) ; leiv    = .TRUE.
@@ -229,7 +232,7 @@ PROGRAM cdfmocsig
   zspv = getspval(cf_vfil, cn_vomecrty)
 
   IF ( lg_vvl )  THEN
-     cn_fe3v = cf_vfil
+     cn_fe3v = cf_e3v
      cn_ve3v = cn_ve3vvvl
   ENDIF
 

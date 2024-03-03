@@ -371,7 +371,7 @@ PROGRAM cdf_xtract_brokenline
   IF ( lsecfile ) THEN
      nstamax = 0
      DO jsec =1, nfiles
-        OPEN(numin, file=cf_lst(jsec) )
+        OPEN(numin, file=cf_lst(jsec), status="old", action="read")
         READ(numin,'(a)') csection(jsec)
         READ(numin,*    ) nsta(jsec)
         nstamax  = MAX( nstamax, nsta(jsec))
@@ -383,7 +383,7 @@ PROGRAM cdf_xtract_brokenline
      ALLOCATE ( rlonsta(nstamax,nfiles), rlatsta(nstamax,nfiles) )
 
      DO jsec =1, nfiles
-        OPEN(numin, file=cf_lst(jsec) )
+        OPEN(numin, file=cf_lst(jsec), status="old", action="read")
         READ(numin,'(a)') csection(jsec)
         READ(numin,*    ) ista
         DO jipt = 1, ista

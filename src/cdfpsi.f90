@@ -44,6 +44,8 @@ PROGRAM cdfpsi
   INTEGER(KIND=4), DIMENSION(:),ALLOCATABLE :: ipk, id_varout  ! levels and id's of output vars
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask           ! mask
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask_ipv       ! mask
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask_ipu       ! mask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e3v        ! v metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2u, e3u        ! u metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv          ! velocity components
@@ -86,12 +88,13 @@ PROGRAM cdfpsi
   LOGICAL                                   :: lssh  = .FALSE. ! flag for ssh computation
   LOGICAL                                   :: lnc4  = .FALSE. ! flag for netcdf4 chunking and deflation
   LOGICAL                                   :: llev  = .FALSE. ! flag for level computation (cdfpsi_level like)
+  LOGICAL                                   :: lmask_ip = .FALSE. ! flag for masking input
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full] [-mask] [-mean] [-nc4]    ...'
+     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full] [-mask] [-mask_ip] [-mean] [-nc4]    ...'
      PRINT *,'          ... [--ssh-file SSH-file] [-open] [-ref iref jref] [-o OUT-file] ...'
      PRINT *,'          ... [-vvl] [-lev]'
      PRINT *,'      '
@@ -109,6 +112,7 @@ PROGRAM cdfpsi
      PRINT *,'       [-full ] : indicates a full step case. Default is partial steps.'
      PRINT *,'       [-mask ] : mask output fields. Note that the land value is significant.'
      PRINT *,'              It correspond to the potential on this continent.'
+     PRINT *,'       [-mask_ip ] : mask input fields.' 
      PRINT *,'       [-mean ] : save the average of the computations done with U and V.'
      PRINT *,'       [--ssh-file SSH-file] : compute the transport in the ''ssh'' layer, using '
      PRINT *,'              surface velocities. Take the ssh from T-file specified in this'
@@ -153,6 +157,7 @@ PROGRAM cdfpsi
      CASE ('-V'        ) ; ll_v  = .TRUE. ;  ll_u = .FALSE.
      CASE ('-full'     ) ; lfull = .TRUE.
      CASE ('-mask'     ) ; lmask = .TRUE.
+     CASE ('-mask_ip'  ) ; lmask_ip = .TRUE.
      CASE ('-mean'     ) ; lmean = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
      CASE ('--ssh-file') ; lssh  = .TRUE.  ; nvout=3
         ;                  CALL getarg( ijarg, cf_sshfil ) ; ijarg=ijarg+1 
@@ -169,7 +174,7 @@ PROGRAM cdfpsi
 
   lchk = lchk .OR. chkfile( cn_fhgr )
   lchk = lchk .OR. chkfile( cn_fzgr )
-  IF ( lmask) lchk = lchk .OR. chkfile( cn_fmsk )
+  IF ( lmask .OR. lmask_ip ) lchk = lchk .OR. chkfile( cn_fmsk )
   IF ( lssh ) lchk = lchk .OR. chkfile( cf_sshfil )
   lchk = lchk .OR. chkfile( cf_ufil )
   lchk = lchk .OR. chkfile( cf_vfil )
@@ -214,6 +219,7 @@ PROGRAM cdfpsi
   PRINT *, ' Option is use :'
   PRINT *, '    -full : ', lfull
   PRINT *, '    -mask : ', lmask
+  PRINT *, '    -mask_ip : ', lmask_ip
   PRINT *, '    -mean : ', lmean
   PRINT *, '    -ssh  : ', lssh
   PRINT *, '    -open : ', lopen
@@ -225,7 +231,9 @@ PROGRAM cdfpsi
   PRINT *, '    -vvl  : ', lg_vvl
 
   ! Allocate arrays
-  ALLOCATE ( zmask(npiglo,npjglo)                 )
+  IF( lmask )    ALLOCATE ( zmask(npiglo,npjglo)                 )
+  IF( lmask_ip .AND. ll_v ) ALLOCATE ( zmask_ipv(npiglo,npjglo)                 )
+  IF( lmask_ip .AND. ll_u ) ALLOCATE ( zmask_ipu(npiglo,npjglo)                 )
   ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo))
   ALLOCATE ( e2u(npiglo,npjglo),e3u(npiglo,npjglo))
   ALLOCATE ( zu(npiglo,npjglo),dtrpu(npiglo,npjglo), dpsiu(npiglo,npjglo), dztrpu(npiglo,npjglo) )
@@ -271,6 +279,10 @@ PROGRAM cdfpsi
      DO jk = 1,npk
         IF ( ll_v ) THEN
            zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
+           IF ( lmask_ip ) THEN
+              zmask_ipv(:,:) = getvar(cn_fmsk, cn_vmask, jk, npiglo, npjglo)
+              zv = zv * zmask_ipv
+           ENDIF
            IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
            ELSE              ; e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF
@@ -290,6 +302,10 @@ PROGRAM cdfpsi
 
         IF ( ll_u) THEN
            zu(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jt )
+           IF ( lmask_ip ) THEN
+              zmask_ipu(:,:) = getvar(cn_fmsk, cn_umask, jk, npiglo, npjglo)
+              zu = zu * zmask_ipu
+           ENDIF
            IF ( lfull ) THEN ; e3u(:,:) = e31d(jk)
            ELSE              ; e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF

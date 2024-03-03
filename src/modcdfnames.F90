@@ -68,12 +68,12 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_tmask='tmask', cn_umask='umask'   !:  tmask, umask
   CHARACTER(LEN=256) :: cn_vmask='vmask', cn_fmask='fmask'   !:  vmask, fmask
   CHARACTER(LEN=256) :: cn_tmaskutil='tmaskutil'             !:  tmaskutil
-  CHARACTER(LEN=256) :: cn_polymask='polymask'               !:  polymask
-  CHARACTER(LEN=256) :: cn_tmaskatl='tmaskatl'               !:  atlantic mask in cn_fbasins
-  CHARACTER(LEN=256) :: cn_tmaskpac='tmaskpac'               !:  pacific mask in cn_fbasins
-  CHARACTER(LEN=256) :: cn_tmaskind='tmaskind'               !:  indian mask in cn_fbasins
-  CHARACTER(LEN=256) :: cn_tmaskant='tmaskant'               !:  austral mask in cn_fbasins
-  CHARACTER(LEN=256) :: cn_tmaskmed='tmaskmed'               !:  mediterranean mask in cn_fbasins
+  CHARACTER(LEN=256) :: cn_polymask='polymsk'               !:  polymask
+  CHARACTER(LEN=256) :: cn_tmaskatl='atlmsk'               !:  atlantic mask in cn_fbasins
+  CHARACTER(LEN=256) :: cn_tmaskpac='pacmsk'               !:  pacific mask in cn_fbasins
+  CHARACTER(LEN=256) :: cn_tmaskind='indmsk'               !:  indian mask in cn_fbasins
+  CHARACTER(LEN=256) :: cn_tmaskant='socmsk'               !:  austral mask in cn_fbasins
+  CHARACTER(LEN=256) :: cn_tmaskmed='medmsk'               !:  mediterranean mask in cn_fbasins
  
 
   ! Generic mesh-mask file names  cn_f...

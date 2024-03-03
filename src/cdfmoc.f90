@@ -78,7 +78,9 @@ PROGRAM cdfmoc
   REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim            ! time counter array
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dmoc            ! nbasins x npjglo x npk
 
+  CHARACTER(LEN=256)                          :: cf_e3v          ! meridional velocity file
   CHARACTER(LEN=256)                          :: cf_vfil         ! meridional velocity file
+  CHARACTER(LEN=256)                          :: cf_xfil         ! meridional velocity file
   CHARACTER(LEN=256)                          :: cf_moc = 'moc.nc'  ! output file name
   CHARACTER(LEN=256)                          :: cglobal         ! Global attribute for output file
   CHARACTER(LEN=256)                          :: cldum           ! dummy char variable
@@ -128,7 +130,8 @@ PROGRAM cdfmoc
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoc  -v V-file  [-decomp] [-rapid] [-t T-file] [-s S-file] ...'
-     PRINT *,'                  ... [-u U-file] [-full] [-vvl ] [-o OUT-file] [-teos] '
+     PRINT *,'                  ... [-u U-file] [-full] [-vvl ] [-o OUT-file] [-teos] ... '
+     PRINT *,'                  ... [-e e3v-file] [-x taux-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       The primary purpose of this tool is to compute the MOC for oceanic '
@@ -222,6 +225,8 @@ PROGRAM cdfmoc
         ! options
      CASE ('-t'     ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE ('-s'     ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ('-e'     ) ; CALL getarg (ijarg, cf_e3v) ; ijarg=ijarg+1
+     CASE ('-x'     ) ; CALL getarg (ijarg, cf_xfil) ; ijarg=ijarg+1
      CASE ('-u'     ) ; CALL getarg (ijarg, cf_ufil) ; ijarg=ijarg+1
      CASE ('-o'     ) ; CALL getarg (ijarg, cf_moc ) ; ijarg=ijarg+1
      CASE ('-full'  ) ; lfull  = .TRUE. ; cglobal = 'Full step computation'
@@ -245,7 +250,7 @@ PROGRAM cdfmoc
   IF ( lrap  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) .OR. chkfile(TRIM(cf_ufil)) 
   IF ( lchk  ) STOP 99  ! missing file(s)
   IF ( lg_vvl) THEN
-     cn_fe3v = cf_vfil
+     cn_fe3v = cf_e3v
      cn_ve3v = cn_ve3vvvl
   ENDIF
 
@@ -667,7 +672,7 @@ CONTAINS
          &              cd_coord=cn_fhgr, cd_point='F')
 
   IF ( lg_vvl) THEN
-     cn_fe3v = cf_vfil
+     cn_fe3v = cf_e3v
      cn_ve3v = cn_ve3vvvl
   ENDIF
 
@@ -727,7 +732,7 @@ CONTAINS
           zwk(:,:) = getvar(cf_vfil,cn_vomecrty,jk,npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt )
           vrapid(:,jk) = zwk(:,1)
        ENDDO
-       dtaux(:,:) =  getvar(cf_ufil,cn_sozotaux,1, npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt )
+       dtaux(:,:) =  getvar(cf_xfil,cn_sozotaux,1, npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt )
        DO jk = 1 , npk
           zwk(:,:) = getvar(cf_tfil,cn_votemper,jk,npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt )
           trapid(:,jk) = zwk(:,1)
