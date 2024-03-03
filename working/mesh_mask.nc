@@ -1,0 +1,1 @@
+/gws/nopw/j04/canari/shared/large-ensemble/ocean/mesh_mask.nc

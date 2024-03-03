@@ -1,0 +1,115 @@
+#!/bin/bash
+#======================================================================
+# Creates and submits a Slurm jobarray script with a list of input files
+#                      Adam Blaker 10/11/2021
+#======================================================================
+
+
+EXP=HIST2
+DP=/gws/nopw/j04/canari/shared/large-ensemble/priority/$EXP     # Data path
+OP=/work/scratch-pw3/atb299/$EXP                                # Output path
+Ens=($DP/*)                                                     # Array of ensemble members
+
+
+# For reference:
+# ${FF[0]/X/Y} ## String substitution
+# ${FF[0]%.*}  ## Strip suffix
+# ${FF[0]##*/} ## Strip path
+
+
+# Loop through ensemble members and create an array of input files
+#for i in ${Ens[*]}; do
+for i in ${Ens[@]:0:2}; do
+
+  # Loop through years 
+  Eyrs=($i/OCN/yearly/*)
+  #for y in ${Eyrs[*]}; do
+  for y in ${Eyrs[@]:0:2}; do
+
+    # Data and Output paths through to YYYY
+    DPY=${DP}/${i##*/}/OCN/yearly/${y##*/}
+    OPY=${OP}/${i##*/}/OCN/yearly/${y##*/}
+    mkdir -p ${OPY}
+
+    # Check whether mocsig has already been computed; if not add the votemper file to the IFiles array
+    if [ ! -f $OPY/*mocsig.nc ]; then IFiles+=(${DPY}/*votemper.nc); fi
+
+  done
+done
+
+
+if [ ! -z "${IFiles}" ];  then
+
+  echo ""
+  echo ""
+  echo "Processing IFiles with cdfmocsig..."
+  Alen=${#IFiles[@]}   # Find length of the array
+  echo "Number of files: " $Alen
+  [[ $Alen > 10000 ]] || { echo >&2 "Job array will exceed 10k."; exit 1; }  # Abort if job array will exceed 10k
+  #echo "Input files are: " ${IFiles[*]}
+
+#======================================================================
+# Create run.slurm, passing the argument values
+[ -f run.slurm ] && rm run.slurm
+cat > run.slurm << EOF
+#!/bin/bash
+#SBATCH --partition=short-serial
+#SBATCH --job-name=comp
+#SBATCH -o %J.out
+#SBATCH -e %J.err
+#SBATCH --time=01:35:00
+##SBATCH --mem=16000
+#SBATCH --array=0-$((${Alen}-1))
+
+module load jaspy/3.10/r20220721
+
+AS=(${IFiles[*]})
+OP=${OP}
+EXP=${EXP}
+
+CDFTOOLS='../bin/'
+
+EOF
+
+#======================================================================
+# Second part of run.slurm with argument(s) passed as arguments
+cat >> run.slurm << 'EOF'
+
+# CDFTOOLS not coded to handle separate variables
+# Arguments for each NEMO file type:
+Base=${AS[$SLURM_ARRAY_TASK_ID]%grid*}
+OF=${OP}${Base##*${EXP}}mocsig.nc
+
+votemper="${AS[$SLURM_ARRAY_TASK_ID]}"
+vosaline="${Base}grid_T_vosaline.nc"
+vozocrtx="${Base}grid_U_vozocrtx.nc"
+sozotaux="${Base}grid_U_sozotaux.nc"
+vomecrty="${Base}grid_V_vomecrty.nc"
+
+e3t="${Base}grid_T_e3t.nc"
+e3u="${Base}grid_U_e3u.nc"
+e3v="${Base}grid_V_e3v.nc"
+
+
+#echo ${CDFTOOLS}cdfmoc -v "${vomecrty}" -e "${e3v}" -decomp -t "${votemper}" -s "${vosaline}" -o "${OF}"
+
+echo ${CDFTOOLS}cdfmocsig -v "${vomecrty}" -t "${votemper}" -s "${vosaline}" -vvl -e "${e3v}" -r 2000 -isodep -o "${OF}"
+${CDFTOOLS}cdfmocsig -v "${vomecrty}" -t "${votemper}" -s "${vosaline}" -vvl -e "${e3v}" -r 2000 -isodep -o "${OF}"
+
+#${CDFTOOLS}cdf_xtrac_brokenline -t "${Tfile}" -u "${Ufile}" -v "${Vfile}" -b subbasins.nc -l osnape_sec.txt -vecrot -o "${OF}"
+
+#${CDFTOOLS}cdf_xtrac_brokenline -t "${Tfile}" -u "${Ufile}" -v "${Vfile}" -b subbasins.nc -l osnapw_sec.txt -vecrot -o "${OF}"
+
+
+
+exit
+EOF
+#======================================================================
+
+sbatch run.slurm # Launch job on LOTUS
+
+
+fi
+
+
+
