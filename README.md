@@ -94,6 +94,15 @@ Example:
           variables : socurl or socurlt (if -T option), units : s^-1
              or socurloverf, no units (if -overf option)
 
+
+## Running tools on the CANARI LE
+ The repository contains a working folder, which contains links to all the relevant mesh and mask files. Example runscripts (e.g. Run_cdfmoc.script) can be duplicated and/or modified as required.
+
+ The CANARI LE data is separated by variable. To use most cdftools it will require modifications to read individual variables. Examples of how to do this are in cdfmoc and cdfmocsig, which now have added arguments -e for the e3v file and -x for the sozotaux file. 
+
+ There is also an issue with parallel submission of tools which read plain text files (e.g. cdf_xtrac_brokenline) if the text files are on a JASMIN "nopw" (no parallel write) file system. The open statements need to be changed to read only open. An example of how to do this is in cdf_xtrac_brokenline.
+
+
 ##### Improving/modifying existing tool
  It is possible to improve (of course !) or modify any tools, but <u>one important law to respect</u> is that the modified tool should still be able to be used with previous syntax, in order to avoid breaking of existing scripts using CDFTOOLS. If for some reason, this is not possible, then a discussion must be done to reach to a common decision. Eventually, some old options must be documented as osbolete in the usage message, which means that they may be removed from a future release. 
 
